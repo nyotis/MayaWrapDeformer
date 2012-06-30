@@ -22,7 +22,7 @@ Thanks to Jakub Krompolc for providing me with the Custom Character Toolkit DVD.
 				                 (aka Modifiers or Space-Warps)
 
 Feel free to skip if you know the basics. This introduction integrates a 
-combination of others people influential work [5] and Maya's API technical notes 
+combination of others people influential work [6] and Maya's API technical notes 
 available online, I claim no copyright.
 
 Deformers are used for manipulating (when modelling) or driving (when animating) 
