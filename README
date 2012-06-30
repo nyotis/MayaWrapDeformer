@@ -1,0 +1,233 @@
+================================================================================
+
+				MayaCustomWrapDeformer
+
+				   Nikos Yiotis			
+				  June 30, 2012
+
+MayaCustomWrapDeformer's basic functionality is to deform a high-resolution mesh
+by deforming a low-resolution polygonal mesh or NURBS surface. 
+MayaCustomWrapDeformer is more robust and much faster compared to the built-in 
+Maya Wrap Deformer and simplifies/automates the rigging process.
+
+MayaCustomWrapDeformer is based on the material presented at Autodesk's 2004 
+Maya MasterClasses series delivered at SIGGRAPH 2004 by Erik Miller and Paul 
+Thuriot. The original code found at the Maya Techniques | Custom Character 
+Toolkit DVD is copyright Autodesk, so I cannot upload it here. A short demo of 
+MayaCustomWrapDeformer's capabilities is available at http://goo.gl/TMpOb .
+Thanks to Jakub Krompolc for providing me with the Custom Character Toolkit DVD.	
+================================================================================
+
+=---------------------------------------------------- Primer on Deformers -----= 
+				                 (aka Modifiers or Space-Warps)
+
+Feel free to skip if you know the basics. This introduction integrates a 
+combination of others people influential work [5] and Maya's API technical notes 
+available online, I claim no copyright.
+
+Deformers are used for manipulating (when modelling) or driving (when animating) 
+low-level components of target geometry. Deformer Nodes are a subset of 
+Dependency Graph Nodes. Depending on the geometric primitive used, deformers move 
+selected vertices of polygonal meshes in new locations, whereas for NURBS curves 
+and surfaces they move around in space vertices that correspond to control points. 
+
+Available techniques (most of them or their modifications used in production):
+
+- Space Deformation [1], 
+- Freeform Deformation, 
+- Wires [4], 
+- Handle metaphor -> volumetric energy minimization (Radial Basis Functions, 
+  Botsch05)
+- Cage-based manipulation (crude version of the input shape, Ju 2005). 
+  Note that a cage is a polytope *not* a lattice.
+- Mean-value/Harmonic/Green coordinates  
+  (instead of Green coordinates, Weber EG09 used holomorphic functions).
+- Mesh segmentation coupled with structured mean value coordinates and heat 
+  diffusion, see [3].
+- Bounded Biharmonic weights, see [2].
+
+Space Deformations can handle arbitrary input (meshes -even non-manifold-, 
+point sets, polygon soups). The complexity depends on the control object *NOT* 
+the input surface. Deformations however, are only slightly aware of the shape 
+being manipulated. Parts of the mesh with small Euclidean distances correspond 
+to similar deformations. Local surface detail can be distorted and that's a top 
+priority that MayaCustomWrapDeformer can handle.
+
+Maya's most popular deformer is a lattice-based deformer, see latticeNoise.h. 
+However, using a lattice as a control object has a number of drawbacks: 
+
+- it makes manipulation difficult (non-intuitive), 
+- the control object is not (necessarily) related to the shape of the edited 
+  object,
+- parts of the shape in Euclidean proximity always deform similarly, even if 
+  they are geodesically far.
+
+Maya's example deformers: latticeNoise.h, offsetNode.cpp, apiMeshShape.h
+
+  =---------------------------------------------------------- References ----= 	
+
+  [1] Barr, A. H., Global and Local Deformations of Solid Primitives, 
+  Proceedings of SIGGRAPH ‘84, Computer Graphics 18, 3 (July 1984), 21-30.
+  [2] Alec Jacobson and Ilya Baran and Jovan Popovi{\'{c}} and Olga Sorkine, 
+  Bounded Biharmonic Weights for Real-Time Deformation, Proceedings of ACM 
+  SIGGRAPH 2011, 30(4), pp. 78:1--78:8, 2011.
+  [3] Miller, Erick and Lin, Chung-An and Lee, Gene S., iBind: smooth indirect 
+  binding using segmented thin-layers, SIGGRAPH 2009:Talks, 73:1--73:1, 2009.
+  [4] K. Singh & E. Fiume. Wires: A Geometric Deformation Technique, ACM 
+  SIGGRAPH, Computer Graphics, pp. 405-414 (July 1998).
+  [5] K. Singh & E. Kokkevis, Skinning Characters using Surface-Oriented 
+  Free-Form Deformations, Proceedings of Graphics Interface, pp. 35--42, 2000.
+  [6] Sorkine, O. and Botsch, M. 2009. Tutorial: Interactive Shape Modeling and 
+  Deformation. EUROGRAPHICS (2009). 
+
+  =--------------------------------------------------------------------------=
+=------------------------------------------------------------------------------=
+
+=----------------------------------------------- Primer on Wrap Deformers -----=
+
+One wrap deformer needs at least one wrap-influence and one wrap-base. Maya 
+makes a copy of the influence object and uses it as a base. Wrap-influence 
+objects are deformable objects themselves and, hence, subject to deformation by 
+other deformers. Also, one can bind wrap-influence objects to a skeleton by a 
+smooth or rigid skinning, so that wrap-influence objects influence the NURBS or 
+polygonal surfaces that provide the character's skin (see Maya's help on 
+_skinning with wrap deformers_). 
+
+MayaCustomWrapDeformer is a wrap deformer (Dependency Graph Deformer) that 
+deforms a wrap-base object (a high-res mesh) based on a single wrap-influence 
+object (typically a low-res mesh). A wrap-base object is the object the user 
+wants to deform, whereas a wrap-influence object (can be more than one) is the 
+object that influences/drives the deformation. The shape of the wrap-influence(s) 
+the user provides together with the user-defined transformations, determines the 
+deformation applied to the wrap-base. Maya generates deformation effects based 
+on the differences between the wrap-influence(s) and the wrap-base. Any 
+difference in position, orientation, or scale between the wrap-base and the 
+wrap-influence(s) results in a deformation of the wrap-base.
+
+Just like with any other Maya deformer, the resolution and the topology of the 
+wrap-influence mesh are not modified, only the positions of the points are 
+changed. The position of the points the user selects are modified w.r.t. to the 
+calculations inside the __deform()__ function. The built-in MPxDeformerNode 
+internally handles this. The resolution of the wrap-influence affects the 
+occuring deformations and the computational time.
+
+MayaCustomWrapDeformer relies on a global UV-parametrization of the input 
+wrap-influence object(s), which comes for free for a model generated in Maya. A 
+vector and a distance are assigned to each vertex of the wrap-base pointing from 
+the UV-coord onto the wrap-influence object. UV coordinates, in contrast to XYZ, 
+are intrinsic coordinates and artists can edit them in the same way they modify 
+vertex positions.
+
+MayaCustomWrapDeformer supports painted weights and the user can control their 
+values interactively. This way the transitional influence between the 
+wrap-influence and the wrap-base has a smooth fall off. Once painted weights are 
+activated (routine needs to be uncommented, code re-compiled) use 
+Paint Attributes Tool from Modify Menu for explicit control.
+=------------------------------------------------------------------------------=
+ 
+=-------------------------------------------------------- Implementation ------=
+
+  =------------------------------------------------------------- Design -----=
+
+  The user feeds input geometry to the plug-in and applies the deformation 
+  module, which modifies the input and produces the desired output geometry. 
+ 
+                       ======
+      _______________ | MAYA |________________________
+    /                  ======                          \
+   |                                                    |
+   |                                                    |
+  ====                                                =====
+ | IN |                                              | OUT |
+  ====                                                =====       
+   |                                                    |
+   |                                                    |
+   |           ======        ========       ======     /                
+    \________ | GEOM |_____ | DEFORM |---- | GEOM |---
+               ======        ========       ======
+                  |
+                  |-- polygonal (triagles, quads) 
+		            |
+                  |-- subdivision
+                  | 
+		            |-- NURBS   
+  =--------------------------------------------------------------------------=
+
+  =------------------------------------------------------ Example of use ----=
+
+  The user selects and deforms a number of vertices on the wrap-influence object
+  and the plug-in automatically computes the deformed positions of the wrap-base.
+  The order of selection _is_ important. Alternatively, I modified a MEL script 
+  written by Erick Miller so that the user can get some feedback when she picks 
+  the wrap-influence and wrap-base in the wrong order, or selects an unsupported 
+  polygonal format.       
+  =--------------------------------------------------------------------------=
+
+  =------------------------------------------------------------ Remarks -----=
+
+  Note that the topology of the mesh to be deformed should be known before-hand 
+  and should remain fixed before generating the deformer, i.e. the user should 
+  not change the resolution of the wrap-influence once the plug-in is loaded. 
+  Modifying the mesh once the deformer is implemented (for instance, by altering 
+  topological information that is mesh's connectivity) will lead to a crash or 
+  undefined behavior. This is not a real issue though: the user may modify the 
+  topology of the mesh after MayaCustomWrapDeformer is plugged into Maya, by 
+  unloading the deformer first, modify the topology of the deformable mesh and 
+  then load the deformer again.
+  =--------------------------------------------------------------------------=
+
+  =-------------------------------------------------------- Compilation -----=  
+
+  The plug-in is implemented exclusively in Maya's C++ API favouring performance 
+  and robustness. I compiled the source for Maya 2012 on Mac OSX (Snow Leopard) 
+  with g++ 4.2.1(Maya 2011 plug-ins need to be compiled with g++ 4.0, which is 
+  not available via macports and did not really want to build g++ 4.0 from 
+  source) having modified 'buildconfig' and 'makefile' courtesy Autodesk in 
+  order to get the necessary *.bundle directly without an intermediate xcodeproj. 
+  Note that Maya's 2010 version and upcoming ones were re-built from scratch 
+  with Qt for implementing better & user-friendlier GUI's so favouring Qmake 
+  instead of Cmake for platform-independent builds seems like a better choice. 
+  Finally, I used the terminal shell app that ships with Maya so that I didn't 
+  have to manually configure environment values like MAYA_LOCATION.
+  =--------------------------------------------------------------------------= 
+  
+  =--------------------------------------------------------------- Tests ----=  
+
+  The plug-in is tested for a wrap-influence (low-res mesh) consisting of max 
+  ~8,7K vertices. Note that this number only depicts the largest tested 
+  threshold and the plug-in might work for wrap-influence meshes of higher 
+  resolution. This is in contrast to the built-in wrap which consists of max 
+  1024 vertices (this, however, needs verification by Autodesk).
+  Keep in mind though, that since the wrap-influence is the low-res mesh that 
+  drives the deformation, there is no practical merit of using an influence 
+  consisting of more than a few thousand vertices.
+  As for the wrap-base, complicated cases were effectively treated, i.e. the 
+  plug-in was tested for a wrap-base of ~100K vertices, close to the typical 
+  size of a mesh that animators and riggers are interested in. Note that the 
+  resolution of the wrap-influence mesh obviously affects plug-in's loading and 
+  computational time.
+  =--------------------------------------------------------------------------=   
+
+  =------------------------------------------------------ Revision History --=
+
+  - 15 June 2012, compiled on Mac OSX (Snow Leopard) with g++ 4.2.1 for Maya 2012.
+  - 31 July 2011, fixed a bug causing a run-time crash.
+  - 24 June 2011, finished a toy-version of the wrap deformer for Maya 2011
+    on Fedora Linux.
+  =--------------------------------------------------------------------------=  
+
+  =-------------------------------------------------------- Extensions ------=  
+
+  - Maya's functions for closest points and normal computations are notoriously 
+    buggy. I am not aware of any other reasonable alternatives.
+  - Test, test and test some more. Achieve certain quality guarantees through 
+    static code analysis and unit testing techniques. Not sure if Maya API 
+    interacts with Google test or the light-weight CppUnit. 
+  - Alternative routines for getting faster access to the Input Geometry 
+    MObject, by Chad Vernon see http://goo.gl/Td3Yy .
+  - It seems that the actual bottleneck of the plug-in is the I/O of the 
+    data, so re-writing the code for CUDA is of little gain.  
+  - How easy is to make a stand-alone without too many modifications?
+  =--------------------------------------------------------------------------=  
+
+=------------------------------------------------------------------------------=
