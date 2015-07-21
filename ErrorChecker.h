@@ -1,3 +1,6 @@
+// http://www.vfxplatform.com/
+// hope for CLANG support anytime soon 
+
 #ifndef _ERRORCHECKER_H_
 #define _ERRORCHECKER_H_
  
