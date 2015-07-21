@@ -1,10 +1,1 @@
 see Wiki
-
-  =------------------------------------------------------ Revision History --=
-
-  - 21 July 2015, added part of the source
-  - 15 June 2012, compiled on Mac OSX (Snow Leopard) with g++ 4.2.1 for Maya 2012.
-  - 31 July 2011, fixed a bug causing a run-time crash.
-  - 24 June 2011, finished a toy-version of the wrap deformer for Maya 2011
-    on Fedora Linux.
-  =--------------------------------------------------------------------------
