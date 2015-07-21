@@ -1,0 +1,107 @@
+#-
+# ==========================================================================
+# Copyright 2011 Autodesk, Inc. All rights reserved.
+#
+# Use of this software is subject to the terms of the Autodesk
+# license agreement provided at the time of installation or download,
+# or which otherwise accompanies this software in either electronic
+# or hard copy form.
+# ==========================================================================
+#+
+
+mayaVersion := 2012
+
+# If you have Maya installed in a non-standard location, uncomment the
+# following line and set the path to the 'Maya.app/Contents' directory of
+# your Maya installation:
+# MAYA_LOCATION = /my/path/to/Maya.app/Contents
+export MAYA_LOCATION
+
+# Make sure these are in your path.
+CC			= gcc-4.2
+C++			= g++-4.2
+LD			= g++-4.2
+
+# By default, we will try to build a universal binary to match the same
+# architectures as the installed Maya binary. If you only want one specific
+# architecture (e.g i386 or x86_64) then set it below.
+PREFERRED_ARCHITECTURE	=
+
+
+#-------------------------------------------------------------
+#
+#		Try to find Maya
+#
+#-------------------------------------------------------------
+ifeq ($(MAYA_LOCATION),)
+    MAYA_LOCATION = /Applications/Autodesk/maya$(mayaVersion)/Maya.app/Contents
+
+    ifeq ($(wildcard $(MAYA_LOCATION)/../../devkit/include/maya/MTypes.h),)
+        $(error Cannot find Maya ${mayaVersion}. Please uncomment the \
+                MAYA_LOCATION setting near the top of 'buildconfig' and set \
+                it to point to the Maya.app/Contents directory of your \
+				Maya ${mayaVersion} installation)
+    endif
+else ifeq ($(wildcard $(MAYA_LOCATION)/../../devkit/include/maya/MTypes.h),)
+    $(error The MAYA_LOCATION environment variable does not point to the \
+            directory where Maya is installed)
+else
+    # Make sure that MAYA_LOCATION is pointing at the correct version of
+    # Maya.
+    apiVersion := $(shell grep 'define.*MAYA_API_VERSION' $(MAYA_LOCATION)/../../devkit/include/maya/MTypes.h | sed 's/^[^0-9]*\([0-9]...\).*$$/\1/')
+
+    ifneq ($(apiVersion),$(mayaVersion))
+        $(error The MAYA_LOCATION environment variable is pointing to \
+                version $(apiVersion) of Maya. Either change it to point to \
+                the directory where Maya $(mayaVersion) is installed or else \
+                uncomment the MAYA_LOCATION setting near the top of 'buildconfig' \
+                and change that to point to the location of Maya $(mayaVersion))
+    endif
+endif
+
+DEVKIT_LOCATION = $(MAYA_LOCATION)/../../devkit
+
+# Determine the architectures to build.
+ARCH_FLAGS =
+MAYABIN = ${MAYA_LOCATION}/bin/maya
+MAYA_ARCHES = $(shell lipo -info $(MAYABIN) | sed 's/^.*://')
+
+ifneq ($(PREFERRED_ARCHITECTURE),)
+	ifneq ($(filter $(PREFERRED_ARCHITECTURE),$(MAYA_ARCHES)),)
+		ARCH_FLAGS = -arch $(PREFERRED_ARCHITECTURE)
+	else
+		$(error $(MAYABIN) does not support the '$(PREFERRED_ARCHITECTURE)' architecture.)
+	endif
+else
+	ARCH_FLAGS = $(patsubst %,-arch %,$(MAYA_ARCHES))
+endif
+
+# Settings
+CFLAGS		= -DCC_GNU_ -DOSMac_ -DOSMacOSX_ -DREQUIRE_IOSTREAM\
+				-DOSMac_MachO_ -O3 $(ARCH_FLAGS)  -D_LANGUAGE_C_PLUS_PLUS \
+				-include "$(DEVKIT_LOCATION)/include/maya/OpenMayaMac.h" 
+C++FLAGS	= $(CFLAGS) $(WARNFLAGS) $(ERROR_FLAGS) -fno-gnu-keywords -fpascal-strings
+INCLUDES	= -I. -I"$(DEVKIT_LOCATION)/include"
+DYNLIB_LOCATION	= $(MAYA_LOCATION)/MacOS
+LFLAGS		= -fno-gnu-keywords -fpascal-strings  \
+				-isysroot /Developer/SDKs/MacOSX10.6.sdk \
+				$(ARCH_FLAGS) -headerpad_max_install_names \
+				-framework System -framework SystemConfiguration \
+				-framework CoreServices -framework Carbon \
+				-framework Cocoa -framework ApplicationServices \
+				-framework IOKit \
+				-bundle
+LFLAGS_GL	= -framework OpenGL -framework AGL
+EXT		= bundle
+
+LREMAP = -Wl,-executable_path,"$(DYNLIB_LOCATION)"
+LIBS		= $(LFLAGS) -L"$(DYNLIB_LOCATION)" $(LREMAP) -lFoundation -lOpenMaya
+LIBS_GL_EXTRA	= $(LFLAGS_GL)
+
+# Find out if the Qt development tools are installed.
+QMAKE = $(shell which qmake 2> /dev/null)
+
+ifneq ($(QMAKE),)
+  # We want to generate a Makefile, not an xcode project.
+  QMAKE += -spec macx-g++
+endif
