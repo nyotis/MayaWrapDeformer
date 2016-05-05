@@ -1,1 +1,88 @@
+/*
 
+Title: CustomWrapDeformer.mel
+Author: Erick Miller
+
+Description:
+		Quick wrapper function to catch user or plugin errors, and issue
+		better instructions if plugin has errors.  Auto finds and checks
+		for correct selections, and re-orders selections, so the order
+		of selection for the function call, ie: select nurbs first, select
+		polys first, etc, is completely independent - selection order doesnt
+		matter. 
+		You can also create
+		the deformer by hand by selecting your objects and typing:
+		CustomWrapDeformer();
+		or by using the deformer command and connecting the nodes yourself
+		(although this next method is highly not recomended unless you
+		know what you are doing and why you are doing it):
+		deformer -type CustomWrapDeformer;
+
+Return Type: 	none
+
+*/
+
+global proc CustomWrapDeformer()
+{
+
+	if ( !`pluginInfo -q -l CustomWrapDeformer`){
+		eval "catch (`loadPlugin -quiet CustomWrapDeformer`)";
+	}
+	if (`pluginInfo -q -l CustomWrapDeformer`)
+	{
+		string $sel[]=`ls -sl`;
+		string $sels[] = `ls -sl -transforms`;
+		if ( `size $sel` < 2 ){
+			error "You must select one nurbs surface object to be the CustomWrapDeformer object, and a poly object (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+		}
+		string $skinObj;
+		int $numNurbs = 0;
+		for ($each in $sels){
+			if ( size ( `listRelatives -s -type nurbsSurface $each` ) ){
+				$skinObj = $each;
+				$numNurbs++;
+			}
+		}
+		if ( $numNurbs <= 0 ){
+			error "You must select one nurbs surface object to be the CustomWrapDeformer object, and a poly object (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+		}
+		if ( $numNurbs >= 2 ){
+			error "You can only select one nurbs object as the CustomWrapDeformer object, and a poly object (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+		}
+		select -d $skinObj;
+		string $selected[] = `ls -sl`;
+		for ($each in $selected){
+
+			string $buffer[];
+			tokenize $selected[0] "." $buffer;
+			string $shapeNodes[];
+			if ( `nodeType $buffer[0]` != "mesh" || `nodeType $buffer[0]` == "transform"){
+				$shapeNodes = `listRelatives -s -f $buffer[0]`;
+			}
+			else{
+				$shapeNodes = { $buffer[0] };
+			}
+			//
+			if (!size($shapeNodes)){
+				error "You must select poly objects only (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+			}
+			if ( size($buffer[1]) &&  !`gmatch $buffer[1] "\*vtx\\[\*"` ){
+				error "You must select poly objects only (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+			}
+			if (`nodeType $shapeNodes[0]` != "mesh" &&  ! size(`listRelatives -s -type mesh $shapeNodes[0]`)){
+				error "You must select poly objects only (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+			}
+		}
+		string $CustomWrapDeformer[] = `deformer -type CustomWrapDeformer`;
+		connectAttr ($skinObj+".worldSpace[0]") ($CustomWrapDeformer[0]+".nurbsObject");
+		setAttr ($CustomWrapDeformer[0]+".initialized") 1;
+		//makePaintable -attrType "multiDblArray" -sm "deformer" "CustomWrapDeformer" "weights";
+		
+		select -r $sel;
+		select -add $CustomWrapDeformer;
+	}
+	else
+	{
+		error "The CustomWrapDeformer requires that the CustomWrapDeformer plugin be loaded, and it could not be found in MAYA_PLUG_IN_PATH ";
+	}
+}
