@@ -1,7 +1,7 @@
 /****************************************************************************
  *  Wrap Deformer -*- C++ -*- .cpp
  * 
- *  Created by Nikos Yiotis on June 2011 for Prime Focus.
+ *  Created by Nikos Yotis on June 2011 for Prime Focus.
  *  Copyright 2011 __Prime Focus__. All rights reserved.
  *
  */
@@ -25,6 +25,7 @@
      the points is changed. MPxDeformerNode handles this. 
 
    [[ Remarks ]]
+   
 
    - Use paintable weights so that the user can paint the weights on the 
      PFWrapdeformer node. this way the transitional influence has a smooth 
