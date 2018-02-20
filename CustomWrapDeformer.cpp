@@ -70,14 +70,14 @@
 
 //************************************** Create a DeformerNode ****************
 
-// In the constructor of MPxDeformerNode _DO NOT_ call any of the MPxNode 
-// member functions. keep MPxDeformerNode's constructor minimal and assign 
-// most of the initialization work to MPxNode's postConstructor       
+   // In the constructor of MPxDeformerNode _DO NOT_ call any of the MPxNode 
+   // member functions. keep MPxDeformerNode's constructor minimal and assign 
+   // most of the initialization work to MPxNode's postConstructor       
 
 PfWrapDeformer:: PfWrapDeformer() {}
 PfWrapDeformer::~PfWrapDeformer() {}
 
-// make instances of this node
+   // make instances of this node
 void* PfWrapDeformer::creator() {
    return new PfWrapDeformer();
 }
