@@ -1,7 +1,11 @@
 /****************************************************************************
  *  Wrap Deformer -*- C++ -*- .cpp
  * 
+<<<<<<< Updated upstream
  *  Created by Nikos Yotis on June 2011 for Prime Focus.
+=======
+ *  Created by Nikolaos Giotis, June 2011 for Prime Focus World VFX.
+>>>>>>> Stashed changes
  *  Copyright 2011 __Prime Focus__. All rights reserved.
  *
  */

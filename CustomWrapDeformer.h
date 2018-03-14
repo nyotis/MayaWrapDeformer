@@ -39,6 +39,7 @@ public:
       // brains of CustomWrapDeformer, it determines all output.
       // best practices in Maya suggest [1], [2] to implement the deform function and let MPxDeformerNode internally handle the compute function
       
+<<<<<<< Updated upstream
         // [1] (david gould)
         // [2] MAYA API guide
 
@@ -46,6 +47,18 @@ public:
                           MItGeometry& iterGeo, 
                           const MMatrix& localToWorldMatrix, 
                           uint geomIndex);
+=======
+   virtual MStatus deform( MDataBlock& data, 
+                           MItGeometry& iterGeo, 
+                           const MMatrix& localToWorldMatrix, 
+                           uint geomIndex );
+   // brains of CustomWrapDeformer, it determines all output.
+   // best practices in Maya suggest [1], [2] to implement the deform function 
+   // and let MPxDeformerNode internally handle the compute function
+      
+   // [1] (david gould)
+   // [2] MAYA API guide
+>>>>>>> Stashed changes
    
       // node attribute objects (all static allocated in CustomWrapDeformer.cpp) 
    static MObject input_poly;          // holds a reference to the wrap-base 

@@ -33,7 +33,9 @@ global proc CustomWrapDeformer()
 		string $sel[]=`ls -sl`;
 		string $sels[] = `ls -sl -transforms`;
 		if ( `size $sel` < 2 ){
-			error "You must select one nurbs surface object to be the CustomWrapDeformer object, and a poly object (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+			error "You must select one nurbs surface object to be the 
+			CustomWrapDeformer object, and a poly object (or a selection of poly 
+			verts) to be deformed by the CustomWrapDeformer.";
 		}
 		string $skinObj;
 		int $numNurbs = 0;
@@ -44,10 +46,14 @@ global proc CustomWrapDeformer()
 			}
 		}
 		if ( $numNurbs <= 0 ){
-			error "You must select one nurbs surface object to be the CustomWrapDeformer object, and a poly object (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+			error "You must select one nurbs surface object to be the 
+			CustomWrapDeformer object, and a poly object (or a selection of poly 
+			verts) to be deformed by the CustomWrapDeformer.";
 		}
 		if ( $numNurbs >= 2 ){
-			error "You can only select one nurbs object as the CustomWrapDeformer object, and a poly object (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+			error "You can only select one nurbs object as the CustomWrapDeformer 
+			object, and a poly object (or a selection of poly verts) to be 
+			deformed by the CustomWrapDeformer.";
 		}
 		select -d $skinObj;
 		string $selected[] = `ls -sl`;
@@ -64,13 +70,16 @@ global proc CustomWrapDeformer()
 			}
 			//
 			if (!size($shapeNodes)){
-				error "You must select poly objects only (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+				error "You must select poly objects only (or a selection of 
+				poly verts) to be deformed by the CustomWrapDeformer.";
 			}
 			if ( size($buffer[1]) &&  !`gmatch $buffer[1] "\*vtx\\[\*"` ){
-				error "You must select poly objects only (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+				error "You must select poly objects only (or a selection of poly 
+				verts) to be deformed by the CustomWrapDeformer.";
 			}
 			if (`nodeType $shapeNodes[0]` != "mesh" &&  ! size(`listRelatives -s -type mesh $shapeNodes[0]`)){
-				error "You must select poly objects only (or a selection of poly verts) to be deformed by the CustomWrapDeformer.";
+				error "You must select poly objects only (or a selection of poly 
+				verts) to be deformed by the CustomWrapDeformer.";
 			}
 		}
 		string $CustomWrapDeformer[] = `deformer -type CustomWrapDeformer`;
